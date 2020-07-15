@@ -8,11 +8,36 @@ import json
 import pandas as pd
 import requests
 from graphqlclient import GraphQLClient
+from six.moves import urllib
+
+
+class GQLC( GraphQLClient ):
+
+    def _send(self, query, variables):
+        data = {
+                'query': query, 'variables': variables
+                }
+        headers = {
+                'Accept': 'application/json', 'Content-Type': 'application/json'
+                }
+
+        if self.token is not None:
+            headers[self.headername] = '{}'.format( self.token )
+
+        req = urllib.request.Request( self.endpoint, json.dumps( data ).encode( 'utf-8' ), headers )
+
+        while True:
+            try:
+                response = urllib.request.urlopen( req, timeout=20 )
+            except urllib.error.HTTPError as e:
+                print( 'Could not connect.. Retrying..' )
+            else:
+                return response.read().decode( 'utf-8' )
 
 
 class USwapper:
     def __init__(self):
-        self.client = GraphQLClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
+        self.client = GQLC( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
 
         # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
         self.ethprice = float(
