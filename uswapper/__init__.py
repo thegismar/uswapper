@@ -78,8 +78,3 @@ class USwapper:
                 ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
                 return ass
 
-
-us = USwapper()
-us.getassets()
-print( us.ethprice )
-print(us.getassets())
