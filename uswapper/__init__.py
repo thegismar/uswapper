@@ -3,82 +3,58 @@ A very basic wrapper for the graphqlclient that uniswap uses as their API, curre
 check for supported symbols
 '''
 
-import json
+import time
 
 import pandas as pd
 import requests
-from graphqlclient import GraphQLClient
-from six.moves import urllib
-
-
-class GQLC( GraphQLClient ):
-
-    def _send(self, query, variables):
-        data = {
-                'query': query, 'variables': variables
-                }
-        headers = {
-                'Accept': 'application/json', 'Content-Type': 'application/json'
-                }
-
-        if self.token is not None:
-            headers[self.headername] = '{}'.format( self.token )
-
-        req = urllib.request.Request( self.endpoint, json.dumps( data ).encode( 'utf-8' ), headers )
-
-        while True:
-            try:
-                response = urllib.request.urlopen( req, timeout=20 )
-            except urllib.error.HTTPError as e:
-                print( 'Could not connect.. Retrying..' )
-            else:
-                return response.read().decode( 'utf-8' )
+from python_graphql_client import GraphqlClient
 
 
 class USwapper:
     def __init__(self):
-        self.client = GQLC( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
+        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
 
-        # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
-        self.ethprice = float(
-                json.loads( self.client.execute( '{bundles{ethPrice}}' ) )['data']['bundles'][0]['ethPrice'] )
+        while True:
+            try:
+                # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
+                self.ethprice = float( self.client.execute( '{bundles{ethPrice}}' )['data']['bundles'][0]['ethPrice'] )
+
+            except ConnectionError:
+                print( 'Connection error.. Retrying' )
+                time.sleep( 5 )
+            else:
+                break
 
     def getprice(self, symbol):
 
         if symbol in self.getassets().values:  # check if the symbol is part of uniswap tokens
+            while True:
+                try:
+                    '''
+                    So this is kinda weird, it seems for some (newer) tokens, the api returns a list of TWO eth prices, 
+                    being the first one 0 and the second one having the actual price. 
 
-            try:
-                '''
-                So this is kinda weird, it seems for some (newer) tokens, the api returns a list of TWO eth prices, 
-                being the first one 0 and the second one having the actual price. 
+                    Since the symbol is part of uniswap tracked tokens, it's gotta have a price, if it's 0 we take the 
+                    2nd item of the list. 
 
-                Since the symbol is part of uniswap tracked tokens, it's gotta have a price, if it's 0 we take the 
-                2nd item of the list. 
+                    This might break at any point.
+                    '''
 
-                This might break at any point.
-                '''
+                    price = float( self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{'
+                                                        f'derivedETH}}}}' )['data']['tokens'][0]['derivedETH'] )
 
-                price = float(
-                        json.loads( self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' ) )[
-                            'data']['tokens'][0]['derivedETH'] )
+                    if price == 0:
+                        price = float(
+                                self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )[
+                                    'data']['tokens'][1]['derivedETH'] )
 
-                if price == 0:
-                    price = float( json.loads(
-                            self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' ) )['data'][
-                                       'tokens'][1]['derivedETH'] )
+                except ConnectionError:
+                    print( 'Connection error' )
+                    time.sleep( 5 )
 
-            # TODO this should be cleaned up since return None is implemented as if it meant the symbol doesn't exist.
-            except requests.exceptions.HTTPError as httpErr:
-                print( "Http Error:", httpErr )
-                return None
-            except requests.exceptions.ConnectionError as connErr:
-                print( "Error Connecting:", connErr )
-                return None
-            except requests.exceptions.RequestException as reqErr:
-                print( "Something Else:", reqErr )
-                return None
-            else:
-                return price
+                else:
+                    return price
+
         else:
             return None
 
@@ -89,20 +65,21 @@ class USwapper:
 
     @staticmethod
     def getassets():
-        try:
-            response = requests.get( 'https://api.uniswap.info/v2/assets', timeout=20 )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as httpErr:
-            print( "Http Error:", httpErr )
-            return None
-        except requests.exceptions.ConnectionError as connErr:
-            print( "Error Connecting:", connErr )
-            return None
-        except requests.exceptions.RequestException as reqErr:
-            print( "Something Else:", reqErr )
-            return None
-        else:
-            ass = pd.DataFrame( response.json() ).T
-            ass.set_index( 'id', inplace=True )
-            ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
-            return ass
+        while True:
+            try:
+                response = requests.get( 'https://api.uniswap.info/v2/assets' )
+                response.raise_for_status()
+            except ConnectionError:
+                print( 'Connection Error..' )
+                time.sleep( 10 )
+            else:
+                ass = pd.DataFrame( response.json() ).T
+                ass.set_index( 'id', inplace=True )
+                ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
+                return ass
+
+
+us = USwapper()
+us.getassets()
+print( us.ethprice )
+print(us.getassets())
