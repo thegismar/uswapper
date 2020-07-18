@@ -60,11 +60,12 @@ class USwapper:
 
     def gettokenaddress(self, symbol):
         ass = self.getassets()
-        addv = ass[ass['symbol'] == symbol].index.values
+        addv = ass[ass['symboil'] == symbol].index.values
         return addv[0]
 
     def getlastupdated(self):
-        ts = int( self.client.execute( f'{{transactions(first: 1 ){{timestamp}}}}' )[
+        ts = int( self.client.execute( f'{{transactions(first: 1, orderBy: timestamp, orderDirection: desc ){{'
+                                       f'timestamp}}}}' )[
                       'data']['transactions'][0]['timestamp'] )
         value = datetime.fromtimestamp( ts )
 
