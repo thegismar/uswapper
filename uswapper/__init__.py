@@ -4,7 +4,7 @@ check for supported symbols
 '''
 
 import time
-
+from datetime import datetime
 import pandas as pd
 import requests
 from python_graphql_client import GraphqlClient
@@ -62,6 +62,13 @@ class USwapper:
         ass = self.getassets()
         addv = ass[ass['symbol'] == symbol].index.values
         return addv[0]
+
+    def getlastupdated(self):
+        ts = int( self.client.execute( f'{{transactions(first: 1 ){{timestamp}}}}' )[
+                      'data']['transactions'][0]['timestamp'] )
+        value = datetime.fromtimestamp( ts )
+
+        return f'{value:%Y-%m-%d %H:%M:%S}'
 
     @staticmethod
     def getassets():
