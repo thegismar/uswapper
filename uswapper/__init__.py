@@ -7,7 +7,6 @@ import time
 from datetime import datetime
 
 import pandas as pd
-import requests
 from python_graphql_client import GraphqlClient
 
 
@@ -71,16 +70,18 @@ class USwapper:
 
         return f'{value:%Y-%m-%d %H:%M:%S}'
 
-    @staticmethod
-    def getassets():
+    def getassets(self):
         for i in range( 3 ):
             try:
-                response = requests.get( 'https://api.uniswap.info/v2/assets' )
+                res = self.client.execute( f'{{tokens{{'
+                                           f'id symbol name decimals}}}}' )['data']['tokens']
+
             except ConnectionError:
                 print( 'Connection Error..' )
                 time.sleep( 1 )
+
             else:
-                ass = pd.DataFrame( response.json() ).T
+
+                ass = pd.DataFrame( res )
                 ass.set_index( 'id', inplace=True )
-                ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
                 return ass
