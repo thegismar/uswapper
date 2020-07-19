@@ -5,6 +5,7 @@ check for supported symbols
 
 import time
 from datetime import datetime
+
 import pandas as pd
 import requests
 from python_graphql_client import GraphqlClient
@@ -12,7 +13,7 @@ from python_graphql_client import GraphqlClient
 
 class USwapper:
     def __init__(self):
-        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
+        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2' )
 
         while True:
             try:
@@ -65,8 +66,7 @@ class USwapper:
 
     def getlastupdated(self):
         ts = int( self.client.execute( f'{{transactions(first: 1, orderBy: timestamp, orderDirection: desc ){{'
-                                       f'timestamp}}}}' )[
-                      'data']['transactions'][0]['timestamp'] )
+                                       f'timestamp}}}}' )['data']['transactions'][0]['timestamp'] )
         value = datetime.fromtimestamp( ts )
 
         return f'{value:%Y-%m-%d %H:%M:%S}'
@@ -85,4 +85,3 @@ class USwapper:
                 ass.set_index( 'id', inplace=True )
                 ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
                 return ass
-
