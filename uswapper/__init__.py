@@ -51,7 +51,7 @@ class USwapper:
 
                 except ConnectionError:
                     print( 'Connection error' )
-                    time.sleep( 5 )
+                    time.sleep( 1 )
 
                 else:
                     return price
@@ -73,13 +73,12 @@ class USwapper:
 
     @staticmethod
     def getassets():
-        while True:
+        for i in range( 3 ):
             try:
                 response = requests.get( 'https://api.uniswap.info/v2/assets' )
-                response.raise_for_status()
             except ConnectionError:
                 print( 'Connection Error..' )
-                time.sleep( 10 )
+                time.sleep( 1 )
             else:
                 ass = pd.DataFrame( response.json() ).T
                 ass.set_index( 'id', inplace=True )
