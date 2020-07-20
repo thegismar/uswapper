@@ -60,7 +60,7 @@ class USwapper:
 
     def gettokenaddress(self, symbol):
         ass = self.getassets()
-        addv = ass[ass['symboil'] == symbol].index.values
+        addv = ass[ass['symbol'] == symbol].index.values
         return addv[0]
 
     def getlastupdated(self):
@@ -71,17 +71,22 @@ class USwapper:
         return f'{value:%Y-%m-%d %H:%M:%S}'
 
     def getassets(self):
-        for i in range( 3 ):
+        i = 0
+        ass = pd.DataFrame()
+        while True:
+            i += 1
             try:
-                res = self.client.execute( f'{{tokens{{'
+                res = self.client.execute( f'{{tokens(first: 1000, skip:{(i-1)*1000}){{'
                                            f'id symbol name decimals}}}}' )['data']['tokens']
+                if len(res) == 0:
+                    break
 
             except ConnectionError:
+
                 print( 'Connection Error..' )
                 time.sleep( 1 )
-
             else:
+                ass = ass.append(res)
 
-                ass = pd.DataFrame( res )
-                ass.set_index( 'id', inplace=True )
-                return ass
+        ass.set_index('id', inplace=True)
+        return ass
