@@ -62,9 +62,7 @@ class USwapper:
                     time.sleep( 10 )
 
                 else:
-                    break
-
-                return price
+                    return price
 
     def gettokenaddress(self, symbol):
         """
@@ -105,6 +103,5 @@ class USwapper:
                 ass = pd.DataFrame( response.json() ).T
                 ass.set_index( 'id', inplace=True )
                 ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
-                break
+                return ass
 
-        return ass
