@@ -59,7 +59,7 @@ class USwapper:
                                 self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )[
                                     'data']['tokens'][1]['derivedETH'] )
 
-                        except (HTTPError, Timeout, TooManyRedirects):
+                except (HTTPError, Timeout, TooManyRedirects):
                     print( 'Connection Error.. Retrying in 10 seconds' )
                     time.sleep( 10 )
 
@@ -97,7 +97,7 @@ class USwapper:
         ass = None
 
         while True:
-            i += 1
+           
             try:
                 response = requests.get( 'https://api.uniswap.info/v2/assets' )
                 response.raise_for_status()
