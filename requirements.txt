@@ -1,6 +1,0 @@
-pandas>=1.0.5
-requests>=2.23.0
-graphqlclient>=0.2.4
-setuptools>=46.0.0
-six>=1.14.0
-python_graphql_client>=0
