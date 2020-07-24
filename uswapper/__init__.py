@@ -6,12 +6,13 @@ check for supported symbols
 import pandas as pd
 import requests
 import time
+
 from python_graphql_client import GraphqlClient
 
 
 class USwapper:
     def __init__(self):
-        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2' )
+        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2' )
 
         while True:
             try:
@@ -57,9 +58,11 @@ class USwapper:
                         price = float(
                                 self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )[
                                     'data']['tokens'][1]['derivedETH'] )
-                except (HTTPError, Timeout, TooManyRedirects):
+
+                        except (HTTPError, Timeout, TooManyRedirects):
                     print( 'Connection Error.. Retrying in 10 seconds' )
                     time.sleep( 10 )
+
 
                 else:
                     return price
@@ -79,6 +82,7 @@ class USwapper:
         addv = ass[ass['symbol'] == symbol].index.values
         return addv[0]
 
+
     @staticmethod
     def getassets():
         """
@@ -93,6 +97,7 @@ class USwapper:
         ass = None
 
         while True:
+            i += 1
             try:
                 response = requests.get( 'https://api.uniswap.info/v2/assets' )
                 response.raise_for_status()
@@ -100,8 +105,6 @@ class USwapper:
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
-                ass = pd.DataFrame( response.json() ).T
-                ass.set_index( 'id', inplace=True )
-                ass.drop( columns=['maker_fee', 'taker_fee'], inplace=True )
+                ass = ass.append(res)
+                ass.set_index('id', inplace=True)
                 return ass
-
