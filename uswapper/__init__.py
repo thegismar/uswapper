@@ -3,11 +3,11 @@ A very basic wrapper for the graphqlclient that uniswap uses as their API, curre
 check for supported symbols
 """
 
+import time
 import pandas as pd
 import requests
-import time
-
 from python_graphql_client import GraphqlClient
+from requests import HTTPError, Timeout, TooManyRedirects
 
 
 class USwapper:
@@ -36,8 +36,6 @@ class USwapper:
             HTTPError, Timeout, TooManyRedirects
         """
 
-        price = None
-
         if symbol in self.getassets().values:  # check if the symbol is part of uniswap tokens
 
             while True:
@@ -63,7 +61,6 @@ class USwapper:
                     print( 'Connection Error.. Retrying in 10 seconds' )
                     time.sleep( 10 )
 
-
                 else:
                     return price
 
@@ -82,7 +79,6 @@ class USwapper:
         addv = ass[ass['symbol'] == symbol].index.values
         return addv[0]
 
-
     @staticmethod
     def getassets():
         """
@@ -94,10 +90,8 @@ class USwapper:
         raises :
             HTTPError, Timeout, TooManyRedirects
         """
-        ass = None
-
         while True:
-           
+
             try:
                 response = requests.get( 'https://api.uniswap.info/v2/assets' )
                 response.raise_for_status()
@@ -105,6 +99,6 @@ class USwapper:
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
-                ass = ass.append(res)
-                ass.set_index('id', inplace=True)
+                ass = pd.DataFrame(response)
+                ass.set_index( 'id', inplace=True )
                 return ass
