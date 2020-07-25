@@ -4,6 +4,7 @@ check for supported symbols
 """
 
 import time
+
 import pandas as pd
 import requests
 from python_graphql_client import GraphqlClient
@@ -13,7 +14,7 @@ from requests import HTTPError, Timeout, TooManyRedirects
 class USwapper:
     def __init__(self):
         self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2' )
-
+        self.ass = self.getassets()
         while True:
             try:
                 # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
@@ -36,33 +37,31 @@ class USwapper:
             HTTPError, Timeout, TooManyRedirects
         """
 
-        if symbol in self.getassets().values:  # check if the symbol is part of uniswap tokens
+        while True:
+            try:
+                '''
+                So this is kinda weird, it seems for some (newer) tokens, the api returns a list of TWO eth prices, 
+                being the first one 0 and the second one having the actual price. 
 
-            while True:
-                try:
-                    '''
-                    So this is kinda weird, it seems for some (newer) tokens, the api returns a list of TWO eth prices, 
-                    being the first one 0 and the second one having the actual price. 
+                Since the symbol is part of uniswap tracked tokens, it's gotta have a price, if it's 0 we take the 
+                2nd item of the list. 
 
-                    Since the symbol is part of uniswap tracked tokens, it's gotta have a price, if it's 0 we take the 
-                    2nd item of the list. 
+                This might break at any point.
+                '''
 
-                    This might break at any point.
-                    '''
+                price = float( self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{'
+                                                    f'derivedETH}}}}' )['data']['tokens'][0]['derivedETH'] )
+                if price == 0:
+                    price = float(
+                            self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )['data'][
+                                'tokens'][1]['derivedETH'] )
 
-                    price = float( self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{'
-                                                        f'derivedETH}}}}' )['data']['tokens'][0]['derivedETH'] )
-                    if price == 0:
-                        price = float(
-                                self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )[
-                                    'data']['tokens'][1]['derivedETH'] )
+            except (HTTPError, Timeout, TooManyRedirects):
+                print( 'Connection Error.. Retrying in 10 seconds' )
+                time.sleep( 10 )
 
-                except (HTTPError, Timeout, TooManyRedirects):
-                    print( 'Connection Error.. Retrying in 10 seconds' )
-                    time.sleep( 10 )
-
-                else:
-                    return price
+            else:
+                return price
 
     def gettokenaddress(self, symbol):
         """
@@ -74,7 +73,6 @@ class USwapper:
         raises :
             HTTPError, Timeout, TooManyRedirects
         """
-
         ass = self.getassets()
         addv = ass[ass['symbol'] == symbol].index.values
         return addv[0]
@@ -99,6 +97,9 @@ class USwapper:
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
-                ass = pd.DataFrame(response)
+                ass = pd.DataFrame( response )
                 ass.set_index( 'id', inplace=True )
                 return ass
+
+    def isuniswapasset(self, symbol):
+        return True if symbol in self.ass else False
