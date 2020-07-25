@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='uswapper',
-      version='0.42',
+      version='0.43',
       description='Simple wrapper for uniswap graphql api',
       license='MIT',
       packages=['uswapper'],
@@ -9,6 +9,6 @@ setup(name='uswapper',
               'pandas',
               'requests==2.22.0',
               'python_graphql_client',
-              'six'
+              'urllib3'
               ],
       zip_safe=False)
