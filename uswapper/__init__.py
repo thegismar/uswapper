@@ -97,9 +97,9 @@ class USwapper:
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
+                response = response.json()
                 ass = pd.DataFrame( response )
-                ass.set_index( 'id', inplace=True )
-                return ass
+                return ass.T
 
     def isuniswapasset(self, symbol):
-        return True if symbol in self.ass else False
+        return True if symbol in self.ass.symbol.values else False
