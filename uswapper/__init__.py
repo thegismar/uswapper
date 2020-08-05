@@ -14,7 +14,9 @@ from urllib3.exceptions import NewConnectionError
 
 class USwapper:
     def __init__(self):
-        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2' )
+        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswapv2' )
+18
+' )
         self.ass = self.getassets()
         while True:
             try:
