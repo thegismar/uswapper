@@ -9,7 +9,6 @@ import pandas as pd
 import requests
 from python_graphql_client import GraphqlClient
 from requests import HTTPError, Timeout, TooManyRedirects
-from urllib3.exceptions import NewConnectionError
 
 
 class USwapper:
@@ -21,7 +20,7 @@ class USwapper:
                 # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
                 self.ethprice = float( self.client.execute( '{bundles{ethPrice}}' )['data']['bundles'][0]['ethPrice'] )
 
-            except (HTTPError, Timeout, TooManyRedirects, NewConnectionError):
+            except (HTTPError, Timeout, TooManyRedirects):
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
@@ -57,7 +56,7 @@ class USwapper:
                             self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )['data'][
                                 'tokens'][1]['derivedETH'] )
 
-            except (HTTPError, Timeout, TooManyRedirects, NewConnectionError):
+            except (HTTPError, Timeout, TooManyRedirects):
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
 
@@ -94,7 +93,7 @@ class USwapper:
             try:
                 response = requests.get( 'https://api.uniswap.info/v2/assets' )
                 response.raise_for_status()
-            except (HTTPError, Timeout, TooManyRedirects, NewConnectionError):
+            except (HTTPError, Timeout, TooManyRedirects):
                 print( 'Connection Error.. Retrying in 10 seconds' )
                 time.sleep( 10 )
             else:
