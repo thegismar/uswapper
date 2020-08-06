@@ -20,12 +20,9 @@ class USwapper:
         returns:
             price in eth
         """
-
         call = f'{{tokens(where: {{symbol: "{symbol}"}})' \
                f'{{derivedETH}}}}'
-
         price = float(self.client.execute(call)['data']['tokens'][0]['derivedETH'])
-
         return price
 
     def gettokenaddress(self, symbol):
@@ -36,14 +33,14 @@ class USwapper:
         returns:
             token address
         """
-        addv = self.ass[self.ass['symbol'] == symbol]['id']
+        addv = self.ass[self.ass['symbol'] == str.upper(symbol)]['id']
         addv.reset_index(inplace=True, drop=True)
         return addv[0]
 
     def gettokensymbol(self, address):
         addv = self.ass[self.ass['id'] == address]['symbol']
         addv.reset_index(inplace=True, drop=True)
-        return addv[0]
+        return str.upper(addv[0])
 
     def getassets(self):
         """
@@ -53,19 +50,32 @@ class USwapper:
         returns:
             pandas dataframe containing token address, symbol, symbol name
         """
+        n = -1
+        while True:
+            n += 1
 
-        call = f'' \
-               f'{{tokens(first:1000, orderDirection: desc, orderBy: tradeVolumeUSD) ' \
-               f'{{' \
-               f'id ' \
-               f'symbol ' \
-               f'derivedETH ' \
-               f'name ' \
-               f'decimals ' \
-               f'}} ' \
-               f'}}'
+            call = f'' \
+                   f'{{tokens(first:1000, orderDirection: desc, orderBy: tradeVolumeUSD, skip: {n * 1000}) ' \
+                   f'{{' \
+                   f'id ' \
+                   f'symbol ' \
+                   f'derivedETH ' \
+                   f'name ' \
+                   f'decimals ' \
+                   f'}} ' \
+                   f'}}'
 
-        return pd.DataFrame(self.client.execute(call)['data']['tokens'])
+            response = pd.DataFrame(self.client.execute(call)['data']['tokens'])
+
+            if len(response) == 0:
+                assets.reset_index(inplace=True, drop=True)
+                assets['symbol'] = assets['symbol'].str.upper()
+                return assets
+
+            if n == 0:
+                assets = pd.DataFrame(response)
+            else:
+                assets = assets.append(response)
 
     def isuniswapasset(self, symbol):
-        return True if symbol in self.ass.symbol.values else False
+        return True if str.upper(symbol) in self.ass.symbol.values else False
