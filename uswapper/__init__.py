@@ -3,28 +3,14 @@ A very basic wrapper for the graphqlclient that uniswap uses as their API, curre
 check for supported symbols
 """
 
-import time
-
 import pandas as pd
-import requests
 from python_graphql_client import GraphqlClient
-from requests import HTTPError, Timeout, TooManyRedirects
 
 
 class USwapper:
     def __init__(self):
-        self.client = GraphqlClient( 'https://api.thegraph.com/subgraphs/name/uniswap/uniswapv2' )
+        self.client = GraphqlClient('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2')
         self.ass = self.getassets()
-        while True:
-            try:
-                # since the api has all prices for tokens in weth we need the eth/usd that uniswap uses
-                self.ethprice = float( self.client.execute( '{bundles{ethPrice}}' )['data']['bundles'][0]['ethPrice'] )
-
-            except (HTTPError, Timeout, TooManyRedirects):
-                print( 'Connection Error.. Retrying in 10 seconds' )
-                time.sleep( 10 )
-            else:
-                break
 
     def getprice(self, symbol):
         """
@@ -33,35 +19,14 @@ class USwapper:
             symbol: token
         returns:
             price in eth
-        raises :
-            HTTPError, Timeout, TooManyRedirects
         """
 
-        while True:
-            try:
-                '''
-                So this is kinda weird, it seems for some (newer) tokens, the api returns a list of TWO eth prices, 
-                being the first one 0 and the second one having the actual price. 
+        call = f'{{tokens(where: {{symbol: "{symbol}"}})' \
+               f'{{derivedETH}}}}'
 
-                Since the symbol is part of uniswap tracked tokens, it's gotta have a price, if it's 0 we take the 
-                2nd item of the list. 
+        price = float(self.client.execute(call)['data']['tokens'][0]['derivedETH'])
 
-                This might break at any point.
-                '''
-
-                price = float( self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{'
-                                                    f'derivedETH}}}}' )['data']['tokens'][0]['derivedETH'] )
-                if price == 0:
-                    price = float(
-                            self.client.execute( f'{{tokens(where: {{symbol: "{symbol}"}}){{derivedETH}}}}' )['data'][
-                                'tokens'][1]['derivedETH'] )
-
-            except (HTTPError, Timeout, TooManyRedirects):
-                print( 'Connection Error.. Retrying in 10 seconds' )
-                time.sleep( 10 )
-
-            else:
-                return price
+        return price
 
     def gettokenaddress(self, symbol):
         """
@@ -70,36 +35,37 @@ class USwapper:
             symbol: token
         returns:
             token address
-        raises :
-            HTTPError, Timeout, TooManyRedirects
         """
-        ass = self.getassets()
-        addv = ass[ass['symbol'] == symbol].index.values
+        addv = self.ass[self.ass['symbol'] == symbol]['id']
+        addv.reset_index(inplace=True, drop=True)
         return addv[0]
 
-    @staticmethod
-    def getassets():
+    def gettokensymbol(self, address):
+        addv = self.ass[self.ass['id'] == address]['symbol']
+        addv.reset_index(inplace=True, drop=True)
+        return addv[0]
+
+    def getassets(self):
         """
         takes one token and checks whether it's part of uniswap tokens, in which case it will return the token address
         parameters:
             None
         returns:
             pandas dataframe containing token address, symbol, symbol name
-        raises :
-            HTTPError, Timeout, TooManyRedirects
         """
-        while True:
 
-            try:
-                response = requests.get( 'https://api.uniswap.info/v2/assets' )
-                response.raise_for_status()
-            except (HTTPError, Timeout, TooManyRedirects):
-                print( 'Connection Error.. Retrying in 10 seconds' )
-                time.sleep( 10 )
-            else:
-                response = response.json()
-                ass = pd.DataFrame( response )
-                return ass.T
+        call = f'' \
+               f'{{tokens(first:1000, orderDirection: desc, orderBy: tradeVolumeUSD) ' \
+               f'{{' \
+               f'id ' \
+               f'symbol ' \
+               f'derivedETH ' \
+               f'name ' \
+               f'decimals ' \
+               f'}} ' \
+               f'}}'
+
+        return pd.DataFrame(self.client.execute(call)['data']['tokens'])
 
     def isuniswapasset(self, symbol):
         return True if symbol in self.ass.symbol.values else False
