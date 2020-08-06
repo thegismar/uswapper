@@ -20,7 +20,9 @@ class USwapper:
         returns:
             price in eth
         """
-        call = f'{{tokens(where: {{symbol: "{symbol}"}})' \
+        a = str(self.gettokenaddress(symbol))
+
+        call = f'{{tokens(where: {{id: "{a}"}})' \
                f'{{derivedETH}}}}'
         price = float(self.client.execute(call)['data']['tokens'][0]['derivedETH'])
         return price
