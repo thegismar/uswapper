@@ -56,7 +56,7 @@ class USwapper:
             n += 1
 
             call = f'' \
-                   f'{{tokens(first:1000, orderDirection: desc, orderBy: totalLiquidity, skip: {n * 1000}) ' \
+                   f'{{tokens(first:1000, orderDirection: desc, orderBy: txCount, skip: {n * 1000}) ' \
                    f'{{' \
                    f'id ' \
                    f'symbol ' \
