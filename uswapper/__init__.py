@@ -35,9 +35,8 @@ class USwapper:
         returns:
             token address
         """
-        addv = self.ass[self.ass['symbol'] == str.upper(symbol)]['id']
-        addv.reset_index(inplace=True, drop=True)
-        return addv[0]
+        i = self.ass[self.ass['symbol'] == str.upper(symbol)]['id'].first_valid_index()
+        return self.ass.id[i]
 
     def gettokensymbol(self, address):
         addv = self.ass[self.ass['id'] == address]['symbol']
@@ -57,7 +56,7 @@ class USwapper:
             n += 1
 
             call = f'' \
-                   f'{{tokens(first:1000, orderDirection: desc, orderBy: tradeVolumeUSD, skip: {n * 1000}) ' \
+                   f'{{tokens(first:1000, orderDirection: desc, orderBy: totalLiquidity, skip: {n * 1000}) ' \
                    f'{{' \
                    f'id ' \
                    f'symbol ' \
