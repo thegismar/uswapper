@@ -20,7 +20,11 @@ class USwapper:
         returns:
             price in eth
         """
-        a = str(self.gettokenaddress(symbol))
+        symbol = str(symbol)
+        if not symbol.startswith('0x'):
+            a = str(self.gettokenaddress(symbol))
+        else:
+            a = symbol
 
         call = f'{{tokens(where: {{id: "{a}"}})' \
                f'{{derivedETH}}}}'
