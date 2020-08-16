@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='uswapper',
-      version='1.7',
+      version='1.8',
       description='Simple wrapper for uniswap graphql api',
       license='MIT',
       packages=['uswapper'],
