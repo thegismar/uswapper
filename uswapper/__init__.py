@@ -5,40 +5,45 @@ check for supported symbols
 
 import pandas as pd
 from python_graphql_client import GraphqlClient
-
+import time
+import json
 
 class USwapper:
     def __init__(self):
         self.client = GraphqlClient('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2')
         self.ass = self.getassets()
 
-    def getprice(self, symbol):
-        """
-        takes one token and iterates until a valid response from api was received
-        parameters:
-            symbol: token
-        returns:
-            price in eth
-        """
-        symbol = str(symbol)
-        if not symbol.startswith('0x'):
-            a = str(self.gettokenaddress(symbol))
-        else:
-            a = symbol
+    def getprice(self, symbols):
 
-        call = f'{{tokens(where: {{id: "{a}"}})' \
-               f'{{derivedETH}}}}'
-        price = float(self.client.execute(call)['data']['tokens'][0]['derivedETH'])
-        return price
+        call = ''
+        a = []
+
+        for symbol in symbols:
+            symbol = str(symbol)
+            if not symbol.startswith('0x'):
+                a.append(str(self.gettokenaddress(symbol)))
+            else:
+                a.append(symbol)
+        a = json.dumps(a)
+        call += f'{{tokens(where: {{id_in: {a}}})' \
+                f'{{derivedETH ' \
+                f'symbol' \
+                f'}}}}'
+
+        prices_dict = {}
+
+        while True:
+
+            try:
+                prices = self.client.execute(call)['data']['tokens']
+            except:
+                time.sleep(5)
+            else:
+                for i in prices:
+                    prices_dict[i['symbol']] = i['derivedETH']
+                return prices_dict
 
     def gettokenaddress(self, symbol):
-        """
-        takes one token and checks whether it's part of uniswap tokens, in which case it will return the token address
-        parameters:
-            symbol: token
-        returns:
-            token address
-        """
         i = self.ass[self.ass['symbol'] == str.upper(symbol)]['id'].first_valid_index()
         return self.ass.id[i]
 
@@ -48,13 +53,6 @@ class USwapper:
         return str.upper(addv[0])
 
     def getassets(self):
-        """
-        takes one token and checks whether it's part of uniswap tokens, in which case it will return the token address
-        parameters:
-            None
-        returns:
-            pandas dataframe containing token address, symbol, symbol name
-        """
         n = -1
         while True:
             n += 1
@@ -70,17 +68,23 @@ class USwapper:
                    f'}} ' \
                    f'}}'
 
-            response = pd.DataFrame(self.client.execute(call)['data']['tokens'])
-
-            if len(response) == 0:
-                assets.reset_index(inplace=True, drop=True)
-                assets['symbol'] = assets['symbol'].str.upper()
-                return assets
-
-            if n == 0:
-                assets = pd.DataFrame(response)
+            try:
+                response = pd.DataFrame(self.client.execute(call)['data']['tokens'])
+            except:
+                time.sleep(5)
+                break
             else:
-                assets = assets.append(response)
+
+                if len(response) == 0:
+                    assets.reset_index(inplace=True, drop=True)
+                    assets['symbol'] = assets['symbol'].str.upper()
+                    return assets
+
+                if n == 0:
+                    assets = pd.DataFrame(response)
+                else:
+                    assets = assets.append(response)
 
     def isuniswapasset(self, symbol):
         return True if str.upper(symbol) in self.ass.symbol.values else False
+
